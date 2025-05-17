@@ -1,7 +1,12 @@
 
 import { toast } from "@/components/ui/sonner";
 
-const API_URL = 'http://localhost:5000/api';
+// Make API URL configurable - default to localhost for local development
+const DEFAULT_API_URL = 'http://localhost:5000/api';
+const getApiUrl = () => {
+  // This allows us to configure the API URL from the UI
+  return localStorage.getItem('api_url') || DEFAULT_API_URL;
+};
 
 export interface StatusResponse {
   trained: boolean;
@@ -17,9 +22,10 @@ export interface RecognitionParams {
 class ApiService {
   async checkStatus(): Promise<StatusResponse> {
     try {
+      const apiUrl = getApiUrl();
       const [trainStatus, recognitionStatus] = await Promise.all([
-        fetch(`${API_URL}/status`).then(res => res.json()),
-        fetch(`${API_URL}/recognize/status`).then(res => res.json())
+        fetch(`${apiUrl}/status`).then(res => res.json()),
+        fetch(`${apiUrl}/recognize/status`).then(res => res.json())
       ]);
       
       return {
@@ -35,7 +41,8 @@ class ApiService {
 
   async trainModel(formData: FormData): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/train-folder`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/train-folder`, {
         method: 'POST',
         body: formData
       });
@@ -56,7 +63,8 @@ class ApiService {
 
   async startRecognition(params: RecognitionParams): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/recognize/start`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/recognize/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -79,7 +87,8 @@ class ApiService {
 
   async stopRecognition(): Promise<boolean> {
     try {
-      const response = await fetch(`${API_URL}/recognize/stop`, {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/recognize/stop`, {
         method: 'POST'
       });
       
@@ -94,6 +103,19 @@ class ApiService {
       toast.error("Failed to stop recognition. Please check backend service.");
       return false;
     }
+  }
+
+  // New function to update the API URL
+  setApiUrl(url: string): void {
+    if (url && url.trim() !== '') {
+      localStorage.setItem('api_url', url.trim());
+      toast.success(`API URL updated to: ${url}`);
+    }
+  }
+
+  // Get the current API URL
+  getApiUrl(): string {
+    return getApiUrl();
   }
 }
 
